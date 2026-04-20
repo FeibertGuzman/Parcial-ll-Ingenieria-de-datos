@@ -1,0 +1,11 @@
+id_producto,nombre_producto,categoria,precio_unitario
+1,Laptop Pro 15,Tecnología,1200
+2,Monitor 4K 27,Tecnología,450
+3,Teclado Mecánico,Periféricos,120
+4,Mouse Gamer,Periféricos,60
+5,Silla Ergonómica,Muebles,250
+6,Escritorio Elevable,Muebles,400
+7,Auriculares Noise Cancelling,Tecnología,300
+8,Webcam 1080p,Periféricos,80
+9,Lámpara LED Escritorio,Accesorios,45
+10,Tapete XL,Accesorios,25

@@ -25,24 +25,35 @@ st.set_page_config(
 # Cargar datos
 @st.cache_data
 def load_data():
-    """Carga los datasets desde CSV"""
-    ventas = pd.read_csv('data/ventas.csv')
-    clientes = pd.read_csv('data/clientes.csv')
-    productos = pd.read_csv('data/productos.csv')
-    fechas = pd.read_csv('data/fechas.csv')
-    
-    # Construir Data Warehouse (joins)
-    dw = ventas.merge(clientes, on='id_cliente')
-    dw = dw.merge(productos, on='id_producto')
-    dw = dw.merge(fechas, on='id_fecha')
-    
-    # Convertir fecha a datetime
-    dw['fecha'] = pd.to_datetime(dw['fecha'])
-    
-    return dw, ventas, clientes, productos, fechas
+    """Carga los datasets desde CSV con manejo de errores"""
+    try:
+        ventas = pd.read_csv('data/ventas.csv')
+        clientes = pd.read_csv('data/clientes.csv')
+        productos = pd.read_csv('data/productos.csv')
+        fechas = pd.read_csv('data/fechas.csv')
+        
+        # Construir Data Warehouse (joins)
+        dw = ventas.merge(clientes, on='id_cliente')
+        dw = dw.merge(productos, on='id_producto')
+        dw = dw.merge(fechas, on='id_fecha')
+        
+        # Convertir fecha a datetime
+        dw['fecha'] = pd.to_datetime(dw['fecha'])
+        
+        return dw, ventas, clientes, productos, fechas
+    except FileNotFoundError as e:
+        st.error(f"❌ Error: No se encontraron los archivos de datos en la carpeta 'data/'. {e}")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Error inesperado al cargar datos: {e}")
+        st.stop()
 
-# Cargar datos
-dw, ventas, clientes, productos, fechas = load_data()
+# Cargar datos de forma segura
+try:
+    dw, ventas, clientes, productos, fechas = load_data()
+except Exception:
+    st.warning("⚠️ La aplicación no pudo cargar los datos. Verifica la carpeta 'data/'.")
+    st.stop()
 
 # Título principal
 st.title("📊 Data Warehouse - Dashboard de Ventas")
@@ -144,18 +155,19 @@ def show_dashboard():
         st.plotly_chart(fig_hist, use_container_width=True)
     
     with col_v2:
-        st.subheader("🌍 Mapa: Ventas por Ciudad")
+        st.subheader("🏙️ Ventas por Ciudad")
         city_sales = filtered_dw.groupby(['ciudad', 'region'])['total'].sum().reset_index()
-        fig_map = px.scatter_geo(
-            city_sales,
-            locations=city_sales['ciudad'],
-            locationmode="locations",
-            size='total',
-            color='total',
+        fig_city = px.bar(
+            city_sales.sort_values('total', ascending=False),
+            x='total',
+            y='ciudad',
+            color='region',
+            orientation='h',
             title="Distribución de Ventas por Ciudad",
-            color_continuous_scale="Viridis"
+            color_discrete_sequence=px.colors.qualitative.Prism
         )
-        st.plotly_chart(fig_map, use_container_width=True)
+        fig_city.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig_city, use_container_width=True)
     
     st.markdown("---")
     
@@ -343,10 +355,13 @@ def show_data_orchestration():
     
     # Referencia a imagen DAG
     st.markdown("""
-    > **Nota:** La imagen visual del DAG se encuentra en `dag.png`
-     
-    ![DAG Pipeline](dag.png)
+    > **Nota:** La arquitectura completa y el flujo de datos también están documentados en la [Landing Page](index.html).
     """)
+    
+    try:
+        st.image("dag.png", caption="DAG Pipeline de Airflow")
+    except:
+        st.warning("🖼️ Imagen 'dag.png' no encontrada. Se recomienda incluir una captura del DAG de Airflow.")
     
     st.markdown("---")
     
